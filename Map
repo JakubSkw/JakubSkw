@@ -1,0 +1,251 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import *
+import math
+from math import sqrt
+import json
+from tkintermapview import TkinterMapView
+
+# root window
+root = tk.Tk()
+root.geometry('400x300')
+root.title('Notebook Demo')
+
+current_value = tk.DoubleVar()
+current_value2 = tk.DoubleVar()
+
+# create a notebook
+notebook = ttk.Notebook(root)
+notebook.pack(pady=10, expand=True)
+
+# create frames
+frame1 = ttk.Frame(notebook, width=400, height=280)
+frame2 = ttk.Frame(notebook, width=400, height=280)
+
+frame1.pack(fill='both', expand=True)
+frame2.pack(fill='both', expand=True)
+
+# add frames to notebook
+
+notebook.add(frame1, text='General Information')
+notebook.add(frame2, text='Profile')
+
+
+def get_current_value():
+    return '{: .0f}'.format(current_value.get())
+
+
+def slider_changed(event):
+    value_label.configure(text=get_current_value())
+
+
+def get_current_value2():
+    return '{: .0f}'.format(current_value2.get())
+
+
+def slider_changed2(event):
+    value_label2.configure(text=get_current_value2())
+
+# label for the slider
+slider_label = ttk.Label(
+    frame1,
+    text='Maszt nr1:'
+)
+
+slider_label.grid(
+    column=0,
+    row=0,
+    sticky='w'
+)
+slider_label = ttk.Label(
+    frame1,
+    text='Maszt nr2:'
+)
+slider_label.grid(
+    column=0,
+    row=1,
+    sticky='w'
+)
+slider_label = ttk.Label(
+    frame1,
+    text='GHz: '
+)
+slider_label.grid(
+    column=0,
+    row=3,
+    sticky='w'
+)
+slider_label = ttk.Label(
+    frame2,
+    text='Szerokosc: '
+)
+slider_label.grid(
+    column=0,
+    row=0,
+    sticky='w'
+)
+slider_label = ttk.Label(
+    frame2,
+    text='Wysokosc: '
+)
+slider_label.grid(
+    column=2,
+    row=0,
+    sticky='w'
+)
+
+#  slider
+slider = ttk.Scale(
+    frame1,
+    from_=0,
+    to=100,
+    orient='horizontal',  # vertical
+    command=slider_changed,
+    variable=current_value
+)
+
+slider.grid(
+    column=1,
+    row=0,
+)
+
+slider = ttk.Scale(
+    frame1,
+    from_=0,
+    to=100,
+    orient='horizontal',  # vertical
+    command=slider_changed2,
+    variable=current_value2
+)
+
+slider.grid(
+    column=1,
+    row=1,
+)
+
+# value label
+value_label = ttk.Label(
+    frame1,
+    text=get_current_value()
+)
+value_label.grid(
+    column=2,
+    row=0,
+    columnspan=2,
+    sticky='n'
+)
+value_label2 = ttk.Label(
+    frame1,
+    text=get_current_value2()
+)
+value_label2.grid(
+    column=2,
+    row=1,
+    columnspan=2,
+    sticky='n'
+)
+Frequency = Entry(frame1)
+Frequency.grid(
+    row=3,
+    column=1
+)
+
+degree1 = Entry(frame2, width=8)
+degree1.grid(
+    row=0,
+    column=1
+)
+degree2 = Entry(frame2, width=8)
+degree2.grid(
+    row=0,
+    column=3
+)
+
+Wynik = ttk.Label(
+    frame1,
+    text='Wynik'
+)
+Wynik.grid(
+    column=0,
+    row=5,
+    columnspan=2
+)
+def callback():
+    R = 6371000.0
+    h1 = float(get_current_value())
+    h2 = float(get_current_value2())
+    LoS1 = round(((math.sqrt(2*R*h1))/1000), 3)
+    LoS2 = round(((math.sqrt(2*R*h2))/1000), 3)
+    d =  round(LoS1 + LoS2, 2)
+    f = int(Frequency.get())
+    fresnel = round(17.31*(math.sqrt(d/(4*f))), 2)
+
+    Wynik.configure(text="Line of sight with h1: "+str(LoS1)+"\nLine of sight with h1: "+str(LoS2)+"\nFresnel: "+str(fresnel))
+    return fresnel
+
+def importJSON():
+    dictionary = {
+        "Masz1": get_current_value(),
+        "Masz2": get_current_value2(),
+        "GHz": Frequency.get(),
+        "fresnel": callback()
+    }
+
+    json_object = json.dumps(dictionary, indent=4)
+
+    with open("sample.json", "w") as outfile:
+        outfile.write(json_object)
+
+def importJSON2():
+    dictionary ={
+        "type": "Feature",
+        "geometry":
+        {
+            "type": "Point",
+            "coordinates": [float(degree1.get()), float(degree2.get())]
+        }
+    }
+
+    json_object = json.dumps(dictionary, indent=6)
+
+    with open("map.json", "w") as outfile:
+        outfile.write(json_object)
+
+    map_widget = TkinterMapView(root, width=600,height=400, corner_radius=0)
+    map_widget.pack(fill="both",expand=True)
+    map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+    map_widget.set_position(float(degree1.get()), float(degree2.get()),marker=True)
+
+oblicz = ttk.Button(
+   frame1,
+   text="Oblicz",
+   command=callback
+)
+oblicz.grid(
+    column=0,
+    row=6,
+)
+
+
+importJSON = ttk.Button(
+   frame1,
+   text="JSON",
+   command=importJSON
+)
+importJSON.grid(
+    column=1,
+    row=6,
+)
+
+
+importJSON2 = ttk.Button(
+   frame2,
+   text="JSON",
+   command=importJSON2
+)
+importJSON2.grid(
+    column=1,
+    row=6,
+)
+
+root.mainloop()
